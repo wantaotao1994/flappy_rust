@@ -8,6 +8,6 @@ Just for fun.
 
 I used some image a from [flappy_bevy](https://github.com/TanTanDev/flappy_bevy), thanks.
 
-This is the first time i develper game. Sorry if i have big mistake with my code.   
+This is the first time i develop game. Sorry if i have big mistake with my code.   
 # License
 [WTFPL](https://en.wikipedia.org/wiki/WTFPL)
