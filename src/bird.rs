@@ -1,10 +1,5 @@
-
-use std::default;
-
-use crate::{GameState, back_ground::Screen, collider::Collider, physics::{Gravity, Velocity}};
-
+use crate::{back_ground::Screen, collider::Collider, game_data::{GameScrore, GameState}, physics::{Gravity, Velocity}};
 use bevy::{prelude::*};
-use crate::bird;
 
 pub struct  BirdPlugin;
 impl  Plugin for BirdPlugin {
@@ -38,10 +33,10 @@ pub struct AngleConstans {
 
 
 fn begin(
-    mut birdStatus :ResMut<BirdStaus>,
+    mut bird_status :ResMut<BirdStaus>,
     mut  query: Query<(&mut Player,  &mut Velocity,&mut Transform)>,
 )  {
-    birdStatus.is_flying = true;
+    bird_status.is_flying = true;
     if let Ok((_,mut vel,mut tras)) =  query.single_mut(){
 
         vel.0 = Vec2::ZERO;
@@ -64,6 +59,7 @@ fn setup(
     let texture_handle = asset_server.load("bird.png");
     let texture_atlas = TextureAtlas::from_grid(texture_handle, Vec2::new(24.0, 24.0), 1, 3);
     let texture_atlas_handle = texture_atlases.add(texture_atlas);
+
     commands.spawn_bundle(OrthographicCameraBundle::new_2d());
     commands
         .spawn_bundle(SpriteSheetBundle {
@@ -88,17 +84,17 @@ fn setup(
 }
 
 fn handle_fly_system(
-   mut birdStatus :ResMut<BirdStaus>,
+   mut bird_status :ResMut<BirdStaus>,
     mut  query: Query<(&mut Player,  &Velocity,&AngleConstans,&mut Transform,&Gravity,&JumpSpeed)>,
 ) {
-      if let Ok( (mut player, velocity,angle,mut transform,gravity,speed)) = query.single_mut(){
+      if let Ok( ( _, velocity,angle,mut transform,gravity,speed)) = query.single_mut(){
         if velocity.0.y >= 0.0 {  //up
            let angle = (velocity.0.y/speed.0 )* angle.angle_up;
            transform.rotation =  Quat::from_rotation_z( angle);
-           birdStatus.is_flying = true;
+           bird_status.is_flying = true;
 
         }else {
-            birdStatus.is_flying = false;
+            bird_status.is_flying = false;
 
             let mut  angle_num = (-velocity.0.y/gravity.0 )* angle.angle_down;
             if angle_num< angle.angle_down{
@@ -112,8 +108,9 @@ fn handle_fly_system(
 
 fn handle_system(
     mut state: ResMut<State<GameState>>,
-    mut  screen_query: Query<(&Screen,Entity)>,
+    screen_query: Query<(&Screen,Entity)>,
     mut commands: Commands,
+    mut game_score: ResMut<GameScrore>,
 
     keyboard_input: Res<Input<KeyCode>>,
     mut  query: Query<(&Player, &mut Velocity,&JumpSpeed,&mut Transform)>,
@@ -129,16 +126,20 @@ fn handle_system(
             trans.rotation = Quat::from_rotation_z(0.0);
         },
         _default => {
-            
-            let scrren = screen_query.single_mut().unwrap();
-            commands.entity(scrren.1).despawn();
-            state.set(GameState::InGame);
+            game_score.0 =0;
+
+            for scrren in screen_query.iter() {
+                
+                commands.entity(scrren.1).despawn();
+            }
+            state.set(GameState::InGame).unwrap();
+
         },
     }
 }
 fn animate_sprite_system(
     time: Res<Time>,
-    birdStatus : ResMut<BirdStaus>,
+    bird_status : ResMut<BirdStaus>,
     texture_atlases: Res<Assets<TextureAtlas>>,
     mut query: Query<(&mut Timer, &mut TextureAtlasSprite, &Handle<TextureAtlas>)>,
 ) {
@@ -146,7 +147,7 @@ fn animate_sprite_system(
         timer.tick(time.delta());
         if timer.finished() {
             let texture_atlas = texture_atlases.get(texture_atlas_handle).unwrap();
-                if !birdStatus.is_flying{
+                if !bird_status.is_flying{
                     sprite.index = 1;  //hard code 
                     return;
                 }

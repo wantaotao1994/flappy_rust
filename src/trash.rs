@@ -1,9 +1,5 @@
 
-use crate::trash;
-
 use bevy::prelude::*;
-use rand::{Rng, thread_rng};
-
 pub struct  Trash;
 
 pub struct TrashSetting{

@@ -1,6 +1,8 @@
-use bevy::{prelude::*, tasks::ComputeTaskPool};
+use bevy::{prelude::*};
 
-use crate::GameState;
+use crate::game_data::GameState;
+
+
 
 pub struct Velocity(pub Vec2);
 
@@ -17,7 +19,7 @@ impl Plugin for PhysicsPlugin {
 }
 
 fn gravity_system(mut sprites: Query<(&Gravity,&mut Velocity)>,time: Res<Time>) {
-    for (mut gravity,mut velocity) in sprites.iter_mut() {
+    for (gravity,mut velocity) in sprites.iter_mut() {
         velocity.0.y -= gravity.0 * time.delta_seconds();
     }
 }

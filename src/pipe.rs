@@ -1,28 +1,25 @@
 use std::time::Duration;
 
-use bevy::{asset::LoadState, ecs::entity, prelude::*};
+use bevy::prelude::*;
 use rand::{Rng, thread_rng};
 
-use crate::{GameState, collider::Collider, physics::Velocity, trash::Trash};
+use crate::{GameState, collider::Collider, game_data::GameScrore, physics::Velocity, trash::Trash};
 
+struct MySprite;
 
 pub struct  Pipe;
 struct PipeTimer(Timer);
-
+pub struct ScoreSprite(pub bool);
 pub struct GameSetting{
     pub min_pipe_distance: f32,
     pub max_pipe_distance: f32,
-
     pub max_center_delta: f32,
     pub min_center_delta: f32,
-
     pub move_speed :f32,
-
     pub half_pipe_length :f32,
     pub pipe_bottom_padding :f32,
     pub min_time_gen_pipe :f32,
     pub max_time_gen_pipe :f32
-
 }
 
 
@@ -48,14 +45,11 @@ impl Plugin for PipePlugin {
     }
 }
 
-fn  setup(  time: Res<Time>,
-    mut texture_atlases: ResMut<Assets<TextureAtlas>>,
+fn  setup(  mut texture_atlases: ResMut<Assets<TextureAtlas>>,
     mut commands: Commands,
-    windows : Res<Windows<>>,
-    mut materials: ResMut<Assets<ColorMaterial>>,
     asset_server: Res<AssetServer>,
-    mut ground_timer: ResMut<PipeTimer>,
-    setting: Res<GameSetting>,) {
+    
+    ) {
     
         let texture_handle = asset_server.load("pipe.png");
         let texture_atlas = TextureAtlas::from_grid(texture_handle, Vec2::new(148.0, 820.0), 2, 1);
@@ -76,18 +70,16 @@ fn  setup(  time: Res<Time>,
 }
 fn cleanup(
     mut commands: Commands,
-    mut pipe_query: Query<(Entity,&mut Transform, &Pipe,&Collider)>,
+    mut  _game_score :ResMut<GameScrore>,
+    mut pipe_query: Query<(Entity,&mut Transform, &MySprite,&Collider)>,
 ) {
     for (entity,_,_,_) in pipe_query.iter_mut() {
         commands.entity(entity).despawn();
-
     }
 }
 fn gen_pipe(
     time: Res<Time>,
     mut texture_atlases: ResMut<Assets<TextureAtlas>>,
-
-    
     mut commands: Commands,
     windows : Res<Windows<>>,
     mut materials: ResMut<Assets<ColorMaterial>>,
@@ -102,9 +94,6 @@ fn gen_pipe(
     let texture_atlas = TextureAtlas::from_grid(texture_handle, Vec2::new(148.0, 820.0), 2, 1);
     let texture_atlas_handle = texture_atlases.add(texture_atlas);
 
-
-
-    
     // background+
     ground_timer.0.tick(time.delta());
 
@@ -119,24 +108,20 @@ fn gen_pipe(
             let half_distance = rng.gen_range(setting.min_pipe_distance..setting.max_pipe_distance)/2.0;
 
             let center = rng.gen_range(-half_window_height+100.0..half_window_height-100.0);
-
-
-            
             let distance_pipe_window =  setting.half_pipe_length*2.0-half_window_height;
-
-
-            
             let top_offset_y =  half_window_height-setting.half_pipe_length  + distance_pipe_window +center+half_distance;
             let bottom_offset_y =  -half_window_height+setting.half_pipe_length- distance_pipe_window +center-half_distance;
             
-
-            
+            let born_x = window.width()/2.0+300.0;
             commands.spawn_bundle(SpriteSheetBundle {
                 texture_atlas: texture_atlas_handle.clone().into(),
-                sprite: TextureAtlasSprite::new(0),
+                sprite:TextureAtlasSprite{
+                    index:0,
+                    ..Default::default()
+                },
 
                 transform:Transform{
-                    translation:Vec3::new(window.width()/2.0+300.0,bottom_offset_y,10.0),
+                    translation:Vec3::new(born_x,bottom_offset_y,10.0),
                     ..Default::default()
                 },
                 ..Default::default()
@@ -144,16 +129,17 @@ fn gen_pipe(
             ).insert(Velocity(Vec2::new(
                 -setting.move_speed,
                 0.0,
-            ))).insert(Trash).insert(Collider::Solid).insert(Pipe);
+            ))).insert(Trash).insert(Collider::Solid).insert(Pipe).insert(MySprite);
     
 
             commands.spawn_bundle(SpriteSheetBundle {
                 texture_atlas: texture_atlas_handle.into(),
-                sprite: TextureAtlasSprite::new(1),
-            
+                sprite:TextureAtlasSprite{
+                    index:1,
+                    ..Default::default()
+                },            
                 transform:Transform{
-                    translation:Vec3::new(window.width()/2.0+300.0,top_offset_y,10.0),
-                
+                    translation:Vec3::new(born_x,top_offset_y,10.0),
                     ..Default::default()
                 },
                 ..Default::default()
@@ -161,7 +147,27 @@ fn gen_pipe(
             ).insert(Velocity(Vec2::new(
                 -setting.move_speed,
                 0.0,
-            ))).insert(Trash).insert(Collider::Solid).insert(Pipe);
+            ))).insert(Trash).insert(Collider::Solid).insert(Pipe).insert(MySprite);
+
+
+
+            commands.spawn_bundle(SpriteBundle {
+                material:materials.add(ColorMaterial::color(Color::NONE)),
+                sprite:Sprite{
+                    size:Vec2::new(148.0, half_distance*2.0), //hard code  for the width for score cube
+                    ..Default::default()
+                },
             
+                transform:Transform{
+                    translation:Vec3::new(born_x,center,10.0),
+                    
+                    ..Default::default()
+                },
+                ..Default::default()
+            }
+            ).insert(Velocity(Vec2::new(
+                -setting.move_speed,
+                0.0,
+            ))).insert(Trash).insert(Collider::ScoreGiver).insert(ScoreSprite(false)).insert(MySprite);
     }
 }

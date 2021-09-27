@@ -1,9 +1,5 @@
-use std::os::windows;
-
 use crate::{physics::Velocity};
-
-
-use bevy::{prelude::*, transform};
+use bevy::{prelude::*};
 use rand::{thread_rng, Rng};
 use crate:: trash::*;
 

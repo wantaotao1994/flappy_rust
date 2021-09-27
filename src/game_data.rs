@@ -1,16 +1,11 @@
-enum  GameState {
-    menu,
-    playing,
-    over
-}
-
-pub struct GameStatePlugin;
-
-impl Plugin for GameStatePlugin {
-    fn build(&self, app: &mut AppBuilder) {
-        app.add_system(setup.system());
-            
-    }
+#[derive(Debug, Clone, Eq, PartialEq, Hash)]
+pub enum GameState {
+    Menu,
+    InGame,
+    Over,
 }
 
 
+
+
+pub struct  GameScrore(pub u32);
